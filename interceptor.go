@@ -36,9 +36,6 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 		// Получаем правила лимита из proto-опций метода
 		protoRules := getRateLimitRules(info.FullMethod)
-		if len(protoRules) == 0 {
-			return handler(ctx, req)
-		}
 
 		// Конвертируем в локальные структуры
 		rules := lo.Map(protoRules, func(r *ratelimiterpb.RateLimitRule, _ int) RateLimitRule {
