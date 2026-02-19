@@ -87,7 +87,7 @@ func getRateLimitRules(methodFullName string) []*ratelimiterpb.RateLimitRule {
 			fmt.Println("i", i, "service", svc.Name())
 			for j := 0; j < svc.Methods().Len(); j++ {
 				m := svc.Methods().Get(j)
-				fullName := string(svc.FullName()) + "/" + string(m.Name())
+				fullName := fmt.Sprintf("/%s", m.FullName())
 
 				fmt.Println("j", j, "fullName", fullName)
 				if fullName == methodFullName {
