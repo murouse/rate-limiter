@@ -1,0 +1,7 @@
+version: '3'
+
+tasks:
+  gen:
+    cmds:
+      - protoc --go_out=. --go-grpc_out=. rate_limiter.proto
+
