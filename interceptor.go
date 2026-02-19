@@ -2,6 +2,7 @@ package ratelimiter
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/samber/lo"
 	"google.golang.org/grpc"
@@ -79,17 +80,24 @@ func getRateLimitRules(methodFullName string) []*ratelimiterpb.RateLimitRule {
 
 	// Проходим по всем файлам proto
 	files.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		fmt.Println("RangeFiles")
 		for i := 0; i < fd.Services().Len(); i++ {
 			svc := fd.Services().Get(i)
+
+			fmt.Println("i", i, "service", svc.Name())
 			for j := 0; j < svc.Methods().Len(); j++ {
 				m := svc.Methods().Get(j)
 				fullName := string(svc.FullName()) + "/" + string(m.Name())
+
+				fmt.Println("j", j, "fullName", fullName)
 				if fullName == methodFullName {
 					opts := m.Options().(*descriptorpb.MethodOptions)
 					if opts != nil && proto.HasExtension(opts, ratelimiterpb.E_RateLimits) {
+						fmt.Println("opts", opts)
 						ext := proto.GetExtension(opts, ratelimiterpb.E_RateLimits)
 						if rulesSlice, ok := ext.([]*ratelimiterpb.RateLimitRule); ok {
 							rules = append(rules, rulesSlice...)
+							fmt.Println("rules", rules)
 						}
 					}
 					return false // нашли нужный метод, дальше не ищем
