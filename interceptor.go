@@ -80,7 +80,7 @@ func getRateLimitRules(methodFullName string) []*ratelimiterpb.RateLimitRule {
 
 	// Проходим по всем файлам proto
 	files.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
-		fmt.Println("RangeFiles")
+		fmt.Println("RangeFiles for ", methodFullName)
 		for i := 0; i < fd.Services().Len(); i++ {
 			svc := fd.Services().Get(i)
 
