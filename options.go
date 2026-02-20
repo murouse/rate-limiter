@@ -1,11 +1,13 @@
 package ratelimiter
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/samber/lo"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -23,7 +25,7 @@ func WithCache(cache Cache) Option {
 }
 
 // WithRateKeyExtender sets a custom rate key rateKeyExtender.
-func WithRateKeyExtender(rateKeyExtender RateKeyExtender) Option {
+func WithRateKeyExtender(rateKeyExtender rateKeyExtenderFunc) Option {
 	return func(rl *RateLimiter) {
 		rl.rateKeyExtender = rateKeyExtender
 	}
@@ -45,10 +47,10 @@ func WithGlobalLimitRules(rules []Rule) Option {
 	}
 }
 
-// WithRateKeyFormatterFunc overrides the storage key formatting logic.
+// WithRateKeyFormatter overrides the storage key formatting logic.
 //
 // Advanced usage only.
-func WithRateKeyFormatterFunc(rateKeyFormatter rateKeyFormatterFunc) Option {
+func WithRateKeyFormatter(rateKeyFormatter rateKeyFormatterFunc) Option {
 	return func(rl *RateLimiter) {
 		rl.rateKeyFormatter = rateKeyFormatter
 	}
@@ -107,4 +109,10 @@ func defaultExceedErrorFormatter(exceededRules []Rule) error {
 	}), ", ")
 
 	return status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", msg)
+}
+
+type rateKeyExtenderFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (string, error)
+
+func defaultRateKeyExtender(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (string, error) {
+	return "rate-key-extension", nil
 }

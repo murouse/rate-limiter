@@ -3,8 +3,6 @@ package ratelimiter
 import (
 	"context"
 	"time"
-
-	"google.golang.org/grpc"
 )
 
 // Cache defines storage behavior for fixed-window rate limiting.
@@ -26,20 +24,6 @@ import (
 // Implementations should ensure atomicity (e.g. Redis Lua script).
 type Cache interface {
 	Increment(ctx context.Context, key string, ttl time.Duration) (int64, error)
-}
-
-// RateKeyExtender extracts a rate limit key from an incoming gRPC request.
-//
-// Implementations may derive the key from:
-//
-//   - authenticated user ID
-//   - tenant ID
-//   - IP address
-//   - request metadata
-//
-// The extracted key is used as a part of the rate limiting storage key.
-type RateKeyExtender interface {
-	ExtendRateKey(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (string, error)
 }
 
 type Logger interface {

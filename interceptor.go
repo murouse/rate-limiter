@@ -24,7 +24,7 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		}
 
 		// Извлекаем дополнительный кастомный rate key (например идентификатор пользователя из контекста)
-		rateKeyExtension, err := rl.rateKeyExtender.ExtendRateKey(ctx, req, info)
+		rateKeyExtension, err := rl.rateKeyExtender(ctx, req, info)
 		if err != nil {
 			rl.logger.Errorf("cannot extend rate key for method %q: %v", info.FullMethod, err)
 			return nil, status.Errorf(codes.Internal, "cannot extend rate key: %v", err)
