@@ -7,12 +7,12 @@ option go_package = "github.com/murouse/rate-limiter;rate_limiter";
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/duration.proto";
 
-message RateLimitRule {
+message Rule {
   string name = 1;
   int32 limit = 2;
   google.protobuf.Duration window = 3;
 }
 
 extend google.protobuf.MethodOptions {
-  repeated RateLimitRule rate_limits = 51234;
+  repeated Rule rules = 51234;
 }

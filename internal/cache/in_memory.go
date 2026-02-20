@@ -15,7 +15,7 @@ type InMemoryCache struct {
 	ttl    map[string]time.Time
 }
 
-func New() *InMemoryCache {
+func NewInMemoryCache() *InMemoryCache {
 	return &InMemoryCache{
 		counts: make(map[string]int64),
 		ttl:    make(map[string]time.Time),

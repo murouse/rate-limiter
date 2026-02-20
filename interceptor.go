@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/samber/lo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,99 +12,65 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	ratelimiterpb "github.com/murouse/rate-limiter/gitlab.com/murouse/rate-limiter"
+	ratelimiterpb "github.com/murouse/rate-limiter/github.com/murouse/rate-limiter"
 )
 
-// UnaryServerInterceptor returns a gRPC unary interceptor that
-// enforces fixed-window rate limiting.
-//
-// Behavior:
-//
-//   - Extracts rate key using RateKeyExtractor
-//   - Reads rate limit rules from protobuf method options
-//   - Applies global and method rules
-//   - Returns ResourceExhausted if limit exceeded
-//
-// If no rules are defined for a method, the request proceeds normally.
 func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		// Извлекаем key
+		// Извлекаем rate key
 		rateKey, err := rl.extractor.ExtractRateKey(ctx, req, info)
 		if err != nil {
+			rl.logger.Errorf("cannot extract rate key for method %q: %v", info.FullMethod, err)
 			return nil, status.Errorf(codes.Internal, "cannot extract rate key: %v", err)
 		}
+		rl.logger.Debugf("extracted rate key %q for method %q", rateKey, info.FullMethod)
 
-		// Получаем правила лимита из proto-опций метода
-		protoRules := getRateLimitRules(info.FullMethod)
+		methodRules := rl.getMethodRules()[info.FullMethod]
+		rl.logger.Debugf("found %d rate limit rules for method %q", len(methodRules), info.FullMethod)
 
-		// Конвертируем в локальные структуры
-		rules := lo.Map(protoRules, func(r *ratelimiterpb.RateLimitRule, _ int) RateLimitRule {
-			return RateLimitRule{
-				Name:   r.Name,
-				Limit:  int(r.Limit),
-				Window: r.Window.AsDuration(),
-			}
-		})
-
-		// Проверяем все правила лимита
-		allowed, err := rl.allow(ctx, rateKey, info.FullMethod, rules)
+		exceededRule, err := rl.allow(ctx, rateKey, info.FullMethod, methodRules)
 		if err != nil {
+			rl.logger.Errorf("error checking rate limits for key %q, method %q: %v", rateKey, info.FullMethod, err)
 			return nil, status.Errorf(codes.Internal, "rate limiter allow: %v", err)
 		}
-		if !allowed {
-			return nil, status.Error(codes.ResourceExhausted, "rate limit exceeded")
+		if exceededRule != nil {
+			return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", exceededRule.Name)
 		}
 
-		// Вызываем оригинальный обработчик
 		return handler(ctx, req)
 	}
 }
 
-// getRateLimitRules returns the protobuf-defined rate limit rules
-// for a given gRPC full method name.
-//
-// It scans all registered proto files in protoregistry.GlobalFiles
-// to find the method descriptor matching methodFullName and reads
-// the (rate_limits) extension from its MethodOptions.
-//
-// Returns an empty slice if no rules are defined or the method is not found.
-//
-// The returned rules are raw protobuf definitions and should be
-// converted to internal RateLimitRule structures before evaluation.
-//
-// Fixed-window semantics are enforced later by the Cache implementation.
-func getRateLimitRules(methodFullName string) []*ratelimiterpb.RateLimitRule {
+func (rl *RateLimiter) getMethodRules() map[string][]Rule {
+	rl.methodRulesOnce.Do(rl.loadMethodRules)
+	return rl.methodRules
+}
+
+func (rl *RateLimiter) loadMethodRules() {
 	files := protoregistry.GlobalFiles
-	var rules []*ratelimiterpb.RateLimitRule
+	rulesMap := make(map[string][]Rule)
 
-	// Проходим по всем файлам proto
 	files.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
-		fmt.Println("RangeFiles for ", methodFullName)
 		for i := 0; i < fd.Services().Len(); i++ {
-			svc := fd.Services().Get(i)
+			service := fd.Services().Get(i)
 
-			fmt.Println("i", i, "service", svc.Name())
-			for j := 0; j < svc.Methods().Len(); j++ {
-				m := svc.Methods().Get(j)
-				fullName := fmt.Sprintf("/%s/%s", svc.FullName(), m.Name())
+			for j := 0; j < service.Methods().Len(); j++ {
+				method := service.Methods().Get(j)
+				fullMethodName := fmt.Sprintf("/%s/%s", service.FullName(), method.Name())
 
-				fmt.Println("j", j, "fullName", fullName)
-				if fullName == methodFullName {
-					opts := m.Options().(*descriptorpb.MethodOptions)
-					if opts != nil && proto.HasExtension(opts, ratelimiterpb.E_RateLimits) {
-						fmt.Println("opts", opts)
-						ext := proto.GetExtension(opts, ratelimiterpb.E_RateLimits)
-						if rulesSlice, ok := ext.([]*ratelimiterpb.RateLimitRule); ok {
-							rules = append(rules, rulesSlice...)
-							fmt.Println("rules", rules)
-						}
-					}
-					return false // нашли нужный метод, дальше не ищем
+				options := method.Options().(*descriptorpb.MethodOptions)
+				if options == nil || !proto.HasExtension(options, ratelimiterpb.E_Rules) {
+					continue
+				}
+
+				extension := proto.GetExtension(options, ratelimiterpb.E_Rules)
+				if rulesSlice, ok := extension.([]*ratelimiterpb.Rule); ok {
+					rulesMap[fullMethodName] = RateLimitRulesToModel(rulesSlice)
 				}
 			}
 		}
 		return true
 	})
 
-	return rules
+	rl.methodRules = rulesMap
 }

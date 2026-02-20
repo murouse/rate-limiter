@@ -6,12 +6,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Extractor struct{}
+type DefaultExtractor struct{}
 
-func New() *Extractor {
-	return &Extractor{}
+func NewDefaultExtractor() *DefaultExtractor {
+	return &DefaultExtractor{}
 }
 
-func (e *Extractor) ExtractRateKey(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo) (string, error) {
+func (e *DefaultExtractor) ExtractRateKey(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo) (string, error) {
 	return "rate-key", nil
 }

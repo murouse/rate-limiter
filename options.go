@@ -33,7 +33,7 @@ func WithNamespace(namespace string) Option {
 }
 
 // WithGlobalLimitRules sets rules applied to all RPC methods.
-func WithGlobalLimitRules(rules []RateLimitRule) Option {
+func WithGlobalLimitRules(rules []Rule) Option {
 	return func(rl *RateLimiter) {
 		rl.globalLimitRules = rules
 	}
@@ -45,6 +45,12 @@ func WithGlobalLimitRules(rules []RateLimitRule) Option {
 func WithKeyFormatterFunc(keyFormatter keyFormatterFunc) Option {
 	return func(rl *RateLimiter) {
 		rl.keyFormatter = keyFormatter
+	}
+}
+
+func WithLogger(logger Logger) Option {
+	return func(rl *RateLimiter) {
+		rl.logger = logger
 	}
 }
 

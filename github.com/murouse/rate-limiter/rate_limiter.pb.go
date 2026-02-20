@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type RateLimitRule struct {
+type Rule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -32,20 +32,20 @@ type RateLimitRule struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RateLimitRule) Reset() {
-	*x = RateLimitRule{}
+func (x *Rule) Reset() {
+	*x = Rule{}
 	mi := &file_rate_limiter_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RateLimitRule) String() string {
+func (x *Rule) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RateLimitRule) ProtoMessage() {}
+func (*Rule) ProtoMessage() {}
 
-func (x *RateLimitRule) ProtoReflect() protoreflect.Message {
+func (x *Rule) ProtoReflect() protoreflect.Message {
 	mi := &file_rate_limiter_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -57,26 +57,26 @@ func (x *RateLimitRule) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RateLimitRule.ProtoReflect.Descriptor instead.
-func (*RateLimitRule) Descriptor() ([]byte, []int) {
+// Deprecated: Use Rule.ProtoReflect.Descriptor instead.
+func (*Rule) Descriptor() ([]byte, []int) {
 	return file_rate_limiter_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *RateLimitRule) GetName() string {
+func (x *Rule) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *RateLimitRule) GetLimit() int32 {
+func (x *Rule) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
 	return 0
 }
 
-func (x *RateLimitRule) GetWindow() *durationpb.Duration {
+func (x *Rule) GetWindow() *durationpb.Duration {
 	if x != nil {
 		return x.Window
 	}
@@ -86,31 +86,30 @@ func (x *RateLimitRule) GetWindow() *durationpb.Duration {
 var file_rate_limiter_proto_extTypes = []protoimpl.ExtensionInfo{
 	{
 		ExtendedType:  (*descriptorpb.MethodOptions)(nil),
-		ExtensionType: ([]*RateLimitRule)(nil),
+		ExtensionType: ([]*Rule)(nil),
 		Field:         51234,
-		Name:          "rate_limiter.rate_limits",
-		Tag:           "bytes,51234,rep,name=rate_limits",
+		Name:          "rate_limiter.rules",
+		Tag:           "bytes,51234,rep,name=rules",
 		Filename:      "rate_limiter.proto",
 	},
 }
 
 // Extension fields to descriptorpb.MethodOptions.
 var (
-	// repeated rate_limiter.RateLimitRule rate_limits = 51234;
-	E_RateLimits = &file_rate_limiter_proto_extTypes[0]
+	// repeated rate_limiter.Rule rules = 51234;
+	E_Rules = &file_rate_limiter_proto_extTypes[0]
 )
 
 var File_rate_limiter_proto protoreflect.FileDescriptor
 
 const file_rate_limiter_proto_rawDesc = "" +
 	"\n" +
-	"\x12rate_limiter.proto\x12\frate_limiter\x1a google/protobuf/descriptor.proto\x1a\x1egoogle/protobuf/duration.proto\"l\n" +
-	"\rRateLimitRule\x12\x12\n" +
+	"\x12rate_limiter.proto\x12\frate_limiter\x1a google/protobuf/descriptor.proto\x1a\x1egoogle/protobuf/duration.proto\"c\n" +
+	"\x04Rule\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x121\n" +
-	"\x06window\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x06window:^\n" +
-	"\vrate_limits\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x90\x03 \x03(\v2\x1b.rate_limiter.RateLimitRuleR\n" +
-	"rateLimitsB.Z,gitlab.com/murouse/rate-limiter;rate_limiterb\x06proto3"
+	"\x06window\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x06window:J\n" +
+	"\x05rules\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x90\x03 \x03(\v2\x12.rate_limiter.RuleR\x05rulesB.Z,github.com/murouse/rate-limiter;rate_limiterb\x06proto3"
 
 var (
 	file_rate_limiter_proto_rawDescOnce sync.Once
@@ -126,14 +125,14 @@ func file_rate_limiter_proto_rawDescGZIP() []byte {
 
 var file_rate_limiter_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_rate_limiter_proto_goTypes = []any{
-	(*RateLimitRule)(nil),              // 0: rate_limiter.RateLimitRule
+	(*Rule)(nil),                       // 0: rate_limiter.Rule
 	(*durationpb.Duration)(nil),        // 1: google.protobuf.Duration
 	(*descriptorpb.MethodOptions)(nil), // 2: google.protobuf.MethodOptions
 }
 var file_rate_limiter_proto_depIdxs = []int32{
-	1, // 0: rate_limiter.RateLimitRule.window:type_name -> google.protobuf.Duration
-	2, // 1: rate_limiter.rate_limits:extendee -> google.protobuf.MethodOptions
-	0, // 2: rate_limiter.rate_limits:type_name -> rate_limiter.RateLimitRule
+	1, // 0: rate_limiter.Rule.window:type_name -> google.protobuf.Duration
+	2, // 1: rate_limiter.rules:extendee -> google.protobuf.MethodOptions
+	0, // 2: rate_limiter.rules:type_name -> rate_limiter.Rule
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	2, // [2:3] is the sub-list for extension type_name

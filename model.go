@@ -1,8 +1,13 @@
 package ratelimiter
 
-import "time"
+import (
+	"time"
 
-// RateLimitRule describes a single fixed-window rate limiting rule.
+	ratelimiterpb "github.com/murouse/rate-limiter/github.com/murouse/rate-limiter"
+	"github.com/samber/lo"
+)
+
+// Rule describes a single fixed-window rate limiting rule.
 //
 // Fields:
 //
@@ -18,8 +23,18 @@ import "time"
 //	  Window = time.Minute
 //
 // Multiple rules may be attached to a single RPC method.
-type RateLimitRule struct {
+type Rule struct {
 	Name   string
 	Limit  int
 	Window time.Duration
+}
+
+func RateLimitRulesToModel(rs []*ratelimiterpb.Rule) []Rule {
+	return lo.Map(rs, func(r *ratelimiterpb.Rule, _ int) Rule {
+		return Rule{
+			Name:   r.Name,
+			Limit:  int(r.Limit),
+			Window: r.Window.AsDuration(),
+		}
+	})
 }
