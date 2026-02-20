@@ -40,14 +40,16 @@ func New(opts ...Option) *RateLimiter {
 	return rl
 }
 
-func (rl *RateLimiter) allow(ctx context.Context, rateKey, fullMethod string, methodRules []Rule) (*Rule, error) {
+func (rl *RateLimiter) allow(ctx context.Context, rateKey, fullMethod string, methodRules []Rule) ([]Rule, error) {
+	var exceededRules []Rule
+
 	for _, globalRule := range rl.globalLimitRules {
 		ok, err := rl.checkRule(ctx, rateKey, "global", "global", globalRule)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check global rule: %w", err)
 		}
 		if !ok {
-			return &globalRule, nil
+			exceededRules = append(exceededRules, globalRule)
 		}
 	}
 
@@ -57,11 +59,11 @@ func (rl *RateLimiter) allow(ctx context.Context, rateKey, fullMethod string, me
 			return nil, fmt.Errorf("failed to check method rule: %w", err)
 		}
 		if !ok {
-			return &methodRule, nil
+			exceededRules = append(exceededRules, methodRule)
 		}
 	}
 
-	return nil, nil
+	return exceededRules, nil
 }
 
 func (rl *RateLimiter) checkRule(ctx context.Context, rateKey, fullMethod, ruleName string, rule Rule) (bool, error) {

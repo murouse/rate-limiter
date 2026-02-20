@@ -3,7 +3,9 @@ package ratelimiter
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/samber/lo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,13 +30,17 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		methodRules := rl.getMethodRules()[info.FullMethod]
 		rl.logger.Debugf("found %d rate limit rules for method %q", len(methodRules), info.FullMethod)
 
-		exceededRule, err := rl.allow(ctx, rateKey, info.FullMethod, methodRules)
+		exceededRules, err := rl.allow(ctx, rateKey, info.FullMethod, methodRules)
 		if err != nil {
 			rl.logger.Errorf("error checking rate limits for key %q, method %q: %v", rateKey, info.FullMethod, err)
 			return nil, status.Errorf(codes.Internal, "rate limiter allow: %v", err)
 		}
-		if exceededRule != nil {
-			return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", exceededRule.Name)
+		if len(exceededRules) > 0 {
+			msg := strings.Join(lo.Map(exceededRules, func(exceededRule Rule, _ int) string {
+				return exceededRule.Name
+			}), ", ")
+
+			return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", msg)
 		}
 
 		return handler(ctx, req)
