@@ -16,3 +16,7 @@ message Rule {
 extend google.protobuf.MethodOptions {
   repeated Rule rules = 51234;
 }
+
+extend google.protobuf.FieldOptions {
+  string rate_key = 51235;
+}

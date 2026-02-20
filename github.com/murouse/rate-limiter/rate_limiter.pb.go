@@ -92,12 +92,26 @@ var file_rate_limiter_proto_extTypes = []protoimpl.ExtensionInfo{
 		Tag:           "bytes,51234,rep,name=rules",
 		Filename:      "rate_limiter.proto",
 	},
+	{
+		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
+		ExtensionType: (*string)(nil),
+		Field:         51235,
+		Name:          "rate_limiter.rate_key",
+		Tag:           "bytes,51235,opt,name=rate_key",
+		Filename:      "rate_limiter.proto",
+	},
 }
 
 // Extension fields to descriptorpb.MethodOptions.
 var (
 	// repeated rate_limiter.Rule rules = 51234;
 	E_Rules = &file_rate_limiter_proto_extTypes[0]
+)
+
+// Extension fields to descriptorpb.FieldOptions.
+var (
+	// optional string rate_key = 51235;
+	E_RateKey = &file_rate_limiter_proto_extTypes[1]
 )
 
 var File_rate_limiter_proto protoreflect.FileDescriptor
@@ -109,7 +123,8 @@ const file_rate_limiter_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x121\n" +
 	"\x06window\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x06window:J\n" +
-	"\x05rules\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x90\x03 \x03(\v2\x12.rate_limiter.RuleR\x05rulesB.Z,github.com/murouse/rate-limiter;rate_limiterb\x06proto3"
+	"\x05rules\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x90\x03 \x03(\v2\x12.rate_limiter.RuleR\x05rules::\n" +
+	"\brate_key\x12\x1d.google.protobuf.FieldOptions\x18\xa3\x90\x03 \x01(\tR\arateKeyB.Z,github.com/murouse/rate-limiter;rate_limiterb\x06proto3"
 
 var (
 	file_rate_limiter_proto_rawDescOnce sync.Once
@@ -128,15 +143,17 @@ var file_rate_limiter_proto_goTypes = []any{
 	(*Rule)(nil),                       // 0: rate_limiter.Rule
 	(*durationpb.Duration)(nil),        // 1: google.protobuf.Duration
 	(*descriptorpb.MethodOptions)(nil), // 2: google.protobuf.MethodOptions
+	(*descriptorpb.FieldOptions)(nil),  // 3: google.protobuf.FieldOptions
 }
 var file_rate_limiter_proto_depIdxs = []int32{
 	1, // 0: rate_limiter.Rule.window:type_name -> google.protobuf.Duration
 	2, // 1: rate_limiter.rules:extendee -> google.protobuf.MethodOptions
-	0, // 2: rate_limiter.rules:type_name -> rate_limiter.Rule
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	2, // [2:3] is the sub-list for extension type_name
-	1, // [1:2] is the sub-list for extension extendee
+	3, // 2: rate_limiter.rate_key:extendee -> google.protobuf.FieldOptions
+	0, // 3: rate_limiter.rules:type_name -> rate_limiter.Rule
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	3, // [3:4] is the sub-list for extension type_name
+	1, // [1:3] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
 }
 
@@ -152,7 +169,7 @@ func file_rate_limiter_proto_init() {
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_rate_limiter_proto_rawDesc), len(file_rate_limiter_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
-			NumExtensions: 1,
+			NumExtensions: 2,
 			NumServices:   0,
 		},
 		GoTypes:           file_rate_limiter_proto_goTypes,

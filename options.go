@@ -2,6 +2,12 @@ package ratelimiter
 
 import (
 	"fmt"
+	"slices"
+	"strings"
+
+	"github.com/samber/lo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Option configures RateLimiter.
@@ -39,12 +45,12 @@ func WithGlobalLimitRules(rules []Rule) Option {
 	}
 }
 
-// WithKeyFormatterFunc overrides the storage key formatting logic.
+// WithRateKeyFormatterFunc overrides the storage key formatting logic.
 //
 // Advanced usage only.
-func WithKeyFormatterFunc(keyFormatter keyFormatterFunc) Option {
+func WithRateKeyFormatterFunc(rateKeyFormatter rateKeyFormatterFunc) Option {
 	return func(rl *RateLimiter) {
-		rl.keyFormatter = keyFormatter
+		rl.rateKeyFormatter = rateKeyFormatter
 	}
 }
 
@@ -54,20 +60,51 @@ func WithLogger(logger Logger) Option {
 	}
 }
 
-// keyFormatterFunc builds a unique storage key.
+func WithExceedErrorFormatter(exceedErrorFormatter exceedErrorFormatterFunc) Option {
+	return func(rl *RateLimiter) {
+		rl.exceedErrorFormatter = exceedErrorFormatter
+	}
+}
+
+// rateKeyFormatterFunc builds a unique storage key.
 //
 // Parameters:
 //   - namespace
 //   - rateKey (e.g. user ID)
 //   - fullMethod (gRPC method name)
 //   - ruleName
-type keyFormatterFunc func(namespace, rateKey, fullMethod, ruleName string) string
+type rateKeyFormatterFunc func(namespace, rateKey, fullMethod, ruleName string, attrs map[string]string) string
 
-// defaultKeyFormatter builds a colon-separated storage key.
+// defaultRateKeyFormatter builds a colon-separated storage key.
 //
 // Example:
 //
 //	rate-limiter:default:user123:/svc.Method:per_minute
-func defaultKeyFormatter(namespace, rateKey, fullMethod, ruleName string) string {
+func defaultRateKeyFormatter(namespace, rateKey, fullMethod, ruleName string, attrs map[string]string) string {
+	// Сортируем ключи attrs для детерминированного порядка
+	keys := lo.Keys(attrs)
+	slices.Sort(keys)
+
+	// Строим часть ключа из attrs: key1=val1,key2=val2,...
+	var attrParts []string
+	for _, k := range keys {
+		attrParts = append(attrParts, fmt.Sprintf("%s=%s", k, attrs[k]))
+	}
+	attrStr := strings.Join(attrParts, ",")
+
+	// Собираем финальный ключ
+	if attrStr != "" {
+		return fmt.Sprintf("rate-limiter:%s:%s:%s:%s:%s", namespace, rateKey, fullMethod, ruleName, attrStr)
+	}
 	return fmt.Sprintf("rate-limiter:%s:%s:%s:%s", namespace, rateKey, fullMethod, ruleName)
+}
+
+type exceedErrorFormatterFunc func(exceededRules []Rule) error
+
+func defaultExceedErrorFormatter(exceededRules []Rule) error {
+	msg := strings.Join(lo.Map(exceededRules, func(exceededRule Rule, _ int) string {
+		return exceededRule.Name
+	}), ", ")
+
+	return status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", msg)
 }

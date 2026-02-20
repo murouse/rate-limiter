@@ -39,7 +39,7 @@ type Cache interface {
 //
 // The extracted key is used as a part of the rate limiting storage key.
 type RateKeyExtractor interface {
-	ExtractRateKey(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (string, error)
+	ExtractRateKey(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, attrs map[string]string) (string, error)
 }
 
 type Logger interface {

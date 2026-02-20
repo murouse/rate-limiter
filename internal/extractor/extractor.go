@@ -12,6 +12,6 @@ func NewDefaultExtractor() *DefaultExtractor {
 	return &DefaultExtractor{}
 }
 
-func (e *DefaultExtractor) ExtractRateKey(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo) (string, error) {
+func (e *DefaultExtractor) ExtractRateKey(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, attrs map[string]string) (string, error) {
 	return "rate-key", nil
 }

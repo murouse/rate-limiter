@@ -3,9 +3,7 @@ package ratelimiter
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/samber/lo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,8 +17,14 @@ import (
 
 func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		// Извлекаем атрибуты
+		var attrs map[string]string
+		if msg, ok := req.(proto.Message); ok {
+			attrs = extractRateKeyAttrs(msg)
+		}
+
 		// Извлекаем rate key
-		rateKey, err := rl.extractor.ExtractRateKey(ctx, req, info)
+		rateKey, err := rl.extractor.ExtractRateKey(ctx, req, info, attrs)
 		if err != nil {
 			rl.logger.Errorf("cannot extract rate key for method %q: %v", info.FullMethod, err)
 			return nil, status.Errorf(codes.Internal, "cannot extract rate key: %v", err)
@@ -30,20 +34,122 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		methodRules := rl.getMethodRules()[info.FullMethod]
 		rl.logger.Debugf("found %d rate limit rules for method %q", len(methodRules), info.FullMethod)
 
-		exceededRules, err := rl.allow(ctx, rateKey, info.FullMethod, methodRules)
+		exceededRules, err := rl.allow(ctx, rateKey, methodRules)
 		if err != nil {
 			rl.logger.Errorf("error checking rate limits for key %q, method %q: %v", rateKey, info.FullMethod, err)
 			return nil, status.Errorf(codes.Internal, "rate limiter allow: %v", err)
 		}
 		if len(exceededRules) > 0 {
-			msg := strings.Join(lo.Map(exceededRules, func(exceededRule Rule, _ int) string {
-				return exceededRule.Name
-			}), ", ")
-
-			return nil, status.Errorf(codes.ResourceExhausted, "rate limit exceeded: %s", msg)
+			return nil, rl.exceedErrorFormatter(exceededRules)
 		}
 
 		return handler(ctx, req)
+	}
+}
+
+func (rl *RateLimiter) allow(ctx context.Context, rateKey string, methodRules []Rule) ([]Rule, error) {
+	var exceededRules []Rule
+
+	for _, globalRule := range rl.globalLimitRules {
+		ok, err := rl.checkRule(ctx, rateKey, globalRule)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check global rule: %w", err)
+		}
+		if !ok {
+			exceededRules = append(exceededRules, globalRule)
+		}
+	}
+
+	for _, methodRule := range methodRules {
+		ok, err := rl.checkRule(ctx, rateKey, methodRule)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check method rule: %w", err)
+		}
+		if !ok {
+			exceededRules = append(exceededRules, methodRule)
+		}
+	}
+
+	return exceededRules, nil
+}
+
+func (rl *RateLimiter) checkRule(ctx context.Context, rateKey string, rule Rule) (bool, error) {
+	count, err := rl.cache.Increment(ctx, rateKey, rule.Window)
+	if err != nil {
+		rl.logger.Errorf("increment failed for key %q: %v", rateKey, err)
+		return false, fmt.Errorf("increment: %w", err)
+	}
+
+	if count > int64(rule.Limit) {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func extractRateKeyAttrs(msg proto.Message) map[string]string {
+	attrs := make(map[string]string)
+	if msg == nil {
+		return attrs
+	}
+
+	var walk func(ref protoreflect.Message, prefix string)
+	walk = func(ref protoreflect.Message, prefix string) {
+		desc := ref.Descriptor()
+
+		for i := 0; i < desc.Fields().Len(); i++ {
+			field := desc.Fields().Get(i)
+			opts, ok := field.Options().(*descriptorpb.FieldOptions)
+			if !ok || opts == nil {
+				continue
+			}
+
+			fieldName := string(field.Name())
+			fullName := fieldName
+			if prefix != "" {
+				fullName = prefix + "." + fieldName
+			}
+
+			// Проверяем опцию rate_key
+			if proto.HasExtension(opts, ratelimiterpb.E_RateKey) {
+				alias := proto.GetExtension(opts, ratelimiterpb.E_RateKey).(string)
+				if ref.Has(field) {
+					val := ref.Get(field)
+					attrs[alias] = formatProtoValue(val)
+				}
+			}
+
+			// Рекурсивно для вложенных сообщений
+			if field.Kind() == protoreflect.MessageKind && ref.Has(field) {
+				if field.IsList() {
+					list := ref.Get(field).List()
+					for j := 0; j < list.Len(); j++ {
+						if m, ok := list.Get(j).Message().Interface().(proto.Message); ok {
+							walk(m.ProtoReflect(), fullName)
+						}
+					}
+				} else {
+					if m, ok := ref.Get(field).Message().Interface().(proto.Message); ok {
+						walk(m.ProtoReflect(), fullName)
+					}
+				}
+			}
+		}
+	}
+
+	walk(msg.ProtoReflect(), "")
+	return attrs
+}
+
+// formatProtoValue преобразует protoreflect.Value в строку
+func formatProtoValue(val protoreflect.Value) string {
+	switch v := val.Interface().(type) {
+	case string:
+		return v
+	case fmt.Stringer:
+		return v.String()
+	default:
+		return fmt.Sprintf("%v", v)
 	}
 }
 
