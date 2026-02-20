@@ -28,7 +28,7 @@ type Cache interface {
 	Increment(ctx context.Context, key string, ttl time.Duration) (int64, error)
 }
 
-// RateKeyExtractor extracts a rate limit key from an incoming gRPC request.
+// RateKeyExtender extracts a rate limit key from an incoming gRPC request.
 //
 // Implementations may derive the key from:
 //
@@ -38,8 +38,8 @@ type Cache interface {
 //   - request metadata
 //
 // The extracted key is used as a part of the rate limiting storage key.
-type RateKeyExtractor interface {
-	ExtractRateKey(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, attrs map[string]string) (string, error)
+type RateKeyExtender interface {
+	ExtendRateKey(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (string, error)
 }
 
 type Logger interface {

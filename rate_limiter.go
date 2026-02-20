@@ -4,13 +4,13 @@ import (
 	"sync"
 
 	"github.com/murouse/rate-limiter/internal/cache"
-	"github.com/murouse/rate-limiter/internal/extractor"
+	"github.com/murouse/rate-limiter/internal/extender"
 )
 
 // RateLimiter implements a fixed-window rate limiting middleware for gRPC.
 // The limiter enforces fixed-window semantics.
 type RateLimiter struct {
-	extractor            RateKeyExtractor
+	rateKeyExtender      RateKeyExtender
 	cache                Cache
 	namespace            string
 	globalLimitRules     []Rule
@@ -25,7 +25,7 @@ type RateLimiter struct {
 func New(opts ...Option) *RateLimiter {
 	rl := &RateLimiter{
 		cache:                cache.NewInMemoryCache(),
-		extractor:            extractor.NewDefaultExtractor(),
+		rateKeyExtender:      extender.NewDefaultRateKeyExtender(),
 		namespace:            "default",
 		globalLimitRules:     nil,
 		rateKeyFormatter:     defaultRateKeyFormatter,

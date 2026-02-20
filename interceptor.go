@@ -23,20 +23,20 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 			attrs = extractRateKeyAttrs(msg)
 		}
 
-		// Извлекаем rate key
-		rateKey, err := rl.extractor.ExtractRateKey(ctx, req, info, attrs)
+		// Извлекаем дополнительный кастомный rate key (например идентификатор пользователя из контекста)
+		rateKeyExtension, err := rl.rateKeyExtender.ExtendRateKey(ctx, req, info)
 		if err != nil {
-			rl.logger.Errorf("cannot extract rate key for method %q: %v", info.FullMethod, err)
-			return nil, status.Errorf(codes.Internal, "cannot extract rate key: %v", err)
+			rl.logger.Errorf("cannot extend rate key for method %q: %v", info.FullMethod, err)
+			return nil, status.Errorf(codes.Internal, "cannot extend rate key: %v", err)
 		}
-		rl.logger.Debugf("extracted rate key %q for method %q", rateKey, info.FullMethod)
+		rl.logger.Debugf("rate key extension %q for method %q", rateKeyExtension, info.FullMethod)
 
 		methodRules := rl.getMethodRules()[info.FullMethod]
 		rl.logger.Debugf("found %d rate limit rules for method %q", len(methodRules), info.FullMethod)
 
-		exceededRules, err := rl.allow(ctx, rateKey, methodRules)
+		exceededRules, err := rl.allow(ctx, rateKeyExtension, info.FullMethod, attrs, methodRules)
 		if err != nil {
-			rl.logger.Errorf("error checking rate limits for key %q, method %q: %v", rateKey, info.FullMethod, err)
+			rl.logger.Errorf("error checking rate limits for key %q, method %q: %v", rateKeyExtension, info.FullMethod, err)
 			return nil, status.Errorf(codes.Internal, "rate limiter allow: %v", err)
 		}
 		if len(exceededRules) > 0 {
@@ -47,11 +47,13 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func (rl *RateLimiter) allow(ctx context.Context, rateKey string, methodRules []Rule) ([]Rule, error) {
+func (rl *RateLimiter) allow(ctx context.Context, rateKeyExtension, fullMethod string, attrs map[string]string, methodRules []Rule) ([]Rule, error) {
 	var exceededRules []Rule
 
 	for _, globalRule := range rl.globalLimitRules {
-		ok, err := rl.checkRule(ctx, rateKey, globalRule)
+		fullRateKey := rl.rateKeyFormatter(rl.namespace, rateKeyExtension, fullMethod, globalRule.Name, attrs)
+
+		ok, err := rl.checkRule(ctx, fullRateKey, globalRule)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check global rule: %w", err)
 		}
@@ -61,7 +63,9 @@ func (rl *RateLimiter) allow(ctx context.Context, rateKey string, methodRules []
 	}
 
 	for _, methodRule := range methodRules {
-		ok, err := rl.checkRule(ctx, rateKey, methodRule)
+		fullRateKey := rl.rateKeyFormatter(rl.namespace, rateKeyExtension, fullMethod, methodRule.Name, attrs)
+
+		ok, err := rl.checkRule(ctx, fullRateKey, methodRule)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check method rule: %w", err)
 		}
@@ -73,10 +77,10 @@ func (rl *RateLimiter) allow(ctx context.Context, rateKey string, methodRules []
 	return exceededRules, nil
 }
 
-func (rl *RateLimiter) checkRule(ctx context.Context, rateKey string, rule Rule) (bool, error) {
-	count, err := rl.cache.Increment(ctx, rateKey, rule.Window)
+func (rl *RateLimiter) checkRule(ctx context.Context, fullRateKey string, rule Rule) (bool, error) {
+	count, err := rl.cache.Increment(ctx, fullRateKey, rule.Window)
 	if err != nil {
-		rl.logger.Errorf("increment failed for key %q: %v", rateKey, err)
+		rl.logger.Errorf("increment failed for key %q: %v", fullRateKey, err)
 		return false, fmt.Errorf("increment: %w", err)
 	}
 

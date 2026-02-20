@@ -22,10 +22,10 @@ func WithCache(cache Cache) Option {
 	}
 }
 
-// WithRateKeyExtractor sets a custom rate key extractor.
-func WithRateKeyExtractor(extractor RateKeyExtractor) Option {
+// WithRateKeyExtender sets a custom rate key rateKeyExtender.
+func WithRateKeyExtender(rateKeyExtender RateKeyExtender) Option {
 	return func(rl *RateLimiter) {
-		rl.extractor = extractor
+		rl.rateKeyExtender = rateKeyExtender
 	}
 }
 
@@ -73,14 +73,14 @@ func WithExceedErrorFormatter(exceedErrorFormatter exceedErrorFormatterFunc) Opt
 //   - rateKey (e.g. user ID)
 //   - fullMethod (gRPC method name)
 //   - ruleName
-type rateKeyFormatterFunc func(namespace, rateKey, fullMethod, ruleName string, attrs map[string]string) string
+type rateKeyFormatterFunc func(namespace, rateKeyExtension, fullMethod, ruleName string, attrs map[string]string) string
 
 // defaultRateKeyFormatter builds a colon-separated storage key.
 //
 // Example:
 //
 //	rate-limiter:default:user123:/svc.Method:per_minute
-func defaultRateKeyFormatter(namespace, rateKey, fullMethod, ruleName string, attrs map[string]string) string {
+func defaultRateKeyFormatter(namespace, rateKeyExtension, fullMethod, ruleName string, attrs map[string]string) string {
 	// Сортируем ключи attrs для детерминированного порядка
 	keys := lo.Keys(attrs)
 	slices.Sort(keys)
@@ -94,9 +94,9 @@ func defaultRateKeyFormatter(namespace, rateKey, fullMethod, ruleName string, at
 
 	// Собираем финальный ключ
 	if attrStr != "" {
-		return fmt.Sprintf("rate-limiter:%s:%s:%s:%s:%s", namespace, rateKey, fullMethod, ruleName, attrStr)
+		return fmt.Sprintf("rate-limiter:%s:%s:%s:%s:%s", namespace, rateKeyExtension, fullMethod, ruleName, attrStr)
 	}
-	return fmt.Sprintf("rate-limiter:%s:%s:%s:%s", namespace, rateKey, fullMethod, ruleName)
+	return fmt.Sprintf("rate-limiter:%s:%s:%s:%s", namespace, rateKeyExtension, fullMethod, ruleName)
 }
 
 type exceedErrorFormatterFunc func(exceededRules []Rule) error
