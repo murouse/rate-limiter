@@ -15,6 +15,11 @@ import (
 	ratelimiterpb "github.com/murouse/rate-limiter/github.com/murouse/rate-limiter"
 )
 
+// UnaryServerInterceptor returns a gRPC unary server interceptor
+// that enforces fixed-window rate limiting for incoming requests.
+//
+// It evaluates global and per-method rules, extracts rate key attributes
+// from protobuf messages, and rejects requests that exceed configured limits.
 func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// Извлекаем атрибуты
@@ -47,6 +52,10 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
+// allow evaluates all applicable rate limit rules (global and method-level)
+// for the given request context and returns the list of exceeded rules.
+//
+// It builds a unique storage key per rule and delegates counting to the cache.
 func (rl *RateLimiter) allow(ctx context.Context, rateKeyExtension, fullMethod string, attrs map[string]string, methodRules []Rule) ([]Rule, error) {
 	var exceededRules []Rule
 
@@ -77,6 +86,10 @@ func (rl *RateLimiter) allow(ctx context.Context, rateKeyExtension, fullMethod s
 	return exceededRules, nil
 }
 
+// checkRule increments the counter for the given rule and returns
+// whether the request is allowed within the configured limit.
+//
+// It relies on the cache to provide atomic fixed-window semantics.
 func (rl *RateLimiter) checkRule(ctx context.Context, fullRateKey string, rule Rule) (bool, error) {
 	count, err := rl.cache.Increment(ctx, fullRateKey, rule.Window)
 	if err != nil {
@@ -91,6 +104,10 @@ func (rl *RateLimiter) checkRule(ctx context.Context, fullRateKey string, rule R
 	return true, nil
 }
 
+// extractRateKeyAttrs extracts rate key attributes from a protobuf message.
+//
+// It walks the message recursively and collects fields annotated
+// with the `rate_key` protobuf option.
 func extractRateKeyAttrs(msg proto.Message) map[string]string {
 	attrs := make(map[string]string)
 	if msg == nil {
@@ -142,10 +159,13 @@ func extractRateKeyAttrs(msg proto.Message) map[string]string {
 	}
 
 	walk(msg.ProtoReflect(), "")
+
 	return attrs
 }
 
-// formatProtoValue преобразует protoreflect.Value в строку
+// formatProtoValue converts a protoreflect.Value into its string representation.
+//
+// It supports string values, fmt.Stringer, and falls back to fmt.Sprintf.
 func formatProtoValue(val protoreflect.Value) string {
 	switch v := val.Interface().(type) {
 	case string:
@@ -157,11 +177,18 @@ func formatProtoValue(val protoreflect.Value) string {
 	}
 }
 
+// getMethodRules returns the cached map of gRPC method names to rate limit rules.
+//
+// Rules are loaded once from protobuf descriptors on first access.
 func (rl *RateLimiter) getMethodRules() map[string][]Rule {
 	rl.methodRulesOnce.Do(rl.loadMethodRules)
 	return rl.methodRules
 }
 
+// loadMethodRules scans all registered protobuf files and extracts
+// rate limiting rules defined via the `rules` method option.
+//
+// The result is cached for subsequent lookups.
 func (rl *RateLimiter) loadMethodRules() {
 	files := protoregistry.GlobalFiles
 	rulesMap := make(map[string][]Rule)
@@ -185,6 +212,7 @@ func (rl *RateLimiter) loadMethodRules() {
 				}
 			}
 		}
+
 		return true
 	})
 

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/murouse/rate-limiter/internal/cache"
+	"github.com/murouse/rate-limiter/internal/logger"
 )
 
 // RateLimiter implements a fixed-window rate limiting middleware for gRPC.
@@ -21,6 +22,10 @@ type RateLimiter struct {
 	methodRulesOnce sync.Once
 }
 
+// New creates a new RateLimiter with default configuration.
+//
+// By default, it uses an in-memory cache, no-op logger,
+// default namespace, and standard key formatting behavior.
 func New(opts ...Option) *RateLimiter {
 	rl := &RateLimiter{
 		cache:                cache.NewInMemoryCache(),
@@ -29,7 +34,7 @@ func New(opts ...Option) *RateLimiter {
 		rateKeyExtender:      defaultRateKeyExtender,
 		rateKeyFormatter:     defaultRateKeyFormatter,
 		exceedErrorFormatter: defaultExceedErrorFormatter,
-		logger:               &noopLogger{},
+		logger:               logger.NewNoopLogger(),
 	}
 
 	for _, opt := range opts {

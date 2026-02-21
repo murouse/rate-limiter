@@ -1,7 +1,22 @@
 version: '3'
 
 tasks:
+  # Генерация
   gen:
     cmds:
       - protoc --go_out=. --go-grpc_out=. rate_limiter.proto
 
+  # Линтинг
+  lint:
+    cmds:
+      - PATH={{.LOCAL_BIN}}:{{.PATH}} golangci-lint run --config=.golangci.yml
+
+  # Линтинг с исправлениями
+  lint:fix:
+    cmds:
+      - PATH={{.LOCAL_BIN}}:{{.PATH}} golangci-lint run --fix --config=.golangci.yml
+
+  # Запуск юнит-тестов
+  test:
+    cmds:
+      - go test ./...

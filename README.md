@@ -1,180 +1,271 @@
-# RateLimiter
+# gRPC Fixed-Window Rate Limiter
 
-`rate-limiter` — это гибкая библиотека для **fixed-window rate limiting** в gRPC-сервисах на Go.  
-Она позволяет ограничивать количество запросов на уровне метода и глобально, используя кастомные хранилища (в памяти, Redis и др.), с поддержкой protobuf-опций для RPC.
+Lightweight, protobuf-driven **fixed-window** rate limiter middleware for gRPC.
 
----
-
-## Особенности
-
-- Fixed-window семантика (TTL устанавливается только при первом инкременте ключа)
-- Поддержка нескольких правил на метод (например: "1 запрос в минуту" + "10 запросов в день")
-- Глобальные правила, действующие на все методы
-- Простое подключение через gRPC interceptor
-- Расширяемый storage backend через интерфейс `Cache`
-- Поддержка Redis с атомарным INCR+EXPIRE
-- Настраиваемый ключ (user ID, IP, tenant и т.д.)
-- Легко интегрируется с protobuf-опциями для методов RPC
+* ✅ Fixed-window semantics (no sliding window surprises)
+* ✅ Rules defined directly in `.proto`
+* ✅ Global + per-method limits
+* ✅ Redis or in-memory backend
+* ✅ Pluggable key strategy and logger
 
 ---
 
-## Установка
+## Installation
 
 ```bash
 go get github.com/murouse/rate-limiter
-
-
----
-
-## Быстрый старт
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"time"
-
-	"github.com/murouse/rate-limiter"
-	"google.golang.org/grpc"
-)
-
-func main() {
-	// Инициализируем RateLimiter с кастомными опциями
-	rl := ratelimiter.New(
-		ratelimiter.WithNamespace("my-service"),
-		ratelimiter.WithGlobalLimitRules([]ratelimiter.RateLimitRule{
-			{Name: "global_per_minute", Limit: 1000, Window: time.Minute},
-		}),
-	)
-
-	// Создаём gRPC сервер с interceptor
-	server := grpc.NewServer(
-		grpc.UnaryInterceptor(rl.UnaryServerInterceptor()),
-	)
-
-	_ = server // регистрируем сервисы, запускаем сервер
-}
 ```
 
 ---
 
-## Использование с protobuf
+## How It Works
 
-В `.proto` можно задавать лимиты прямо на методах RPC:
+The limiter:
+
+1. Extracts `rate_key` attributes from request protobuf messages
+2. Builds a deterministic storage key
+3. Applies:
+
+    * Global rules
+    * Per-method rules (defined in proto)
+4. Uses atomic increment with TTL set **only on first request**
+
+> TTL is **not extended** on subsequent increments → strict fixed-window behavior.
+
+---
+
+# Define Rules in Proto
 
 ```proto
 syntax = "proto3";
 
-package myservice;
+package rate_limiter;
 
-import "google/protobuf/duration.proto";
+option go_package = "github.com/murouse/rate-limiter;rate_limiter";
+
 import "google/protobuf/descriptor.proto";
-import "rate_limiter/rate_limiter.proto";
+import "google/protobuf/duration.proto";
 
-service MyService {
-  rpc MyMethod(Request) returns (Response) {
-    option (rate_limiter.rate_limits) = {
+message Rule {
+  string name = 1;
+  int32 limit = 2;
+  google.protobuf.Duration window = 3;
+}
+
+extend google.protobuf.MethodOptions {
+  repeated Rule rules = 51234;
+}
+
+extend google.protobuf.FieldOptions {
+  string rate_key = 51235;
+}
+```
+
+---
+
+## Example: Per-Method Rule
+
+```proto
+service AuthService {
+  rpc SendCode(SendCodeRequest) returns (SendCodeResponse) {
+    option (rate_limiter.rules) = {
       name: "per_minute"
-      limit: 1
+      limit: 6
       window: { seconds: 60 }
-    };
-    option (rate_limiter.rate_limits) = {
-      name: "per_day"
-      limit: 10
-      window: { seconds: 86400 }
     };
   }
 }
 
-message Request {}
-message Response {}
-```
-
-Интерсептор автоматически извлекает правила из protobuf и применяет их.
-
----
-
-## Кастомизация
-
-### Кастомный `Cache`
-
-Интерфейс `Cache` позволяет использовать любые storage backend:
-
-```go
-type Cache interface {
-    Increment(ctx context.Context, key string, ttl time.Duration) (int64, error)
+message SendCodeRequest {
+  string phone = 1 [(rate_limiter.rate_key) = "phone"];
 }
 ```
 
-* TTL должен устанавливаться **только при первом инкременте** (fixed-window semantics).
-* Atomicity обязательна (Redis Lua script, CAS и др.).
+### What happens
 
-### Кастомный ключ
+For `SendCode`:
 
-Можно передавать кастомный `RateKeyExtractor`:
+* Limit: **6 requests per 60 seconds**
+* Key will include:
 
-```go
-type RateKeyExtractor interface {
-    ExtractRateKey(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (string, error)
-}
-```
-
-Пример: извлечение user ID из токена.
-
-### Формат ключа
-
-Можно изменить формат ключа с помощью `WithKeyFormatterFunc`:
-
-```go
-func customFormatter(namespace, rateKey, fullMethod, ruleName string) string {
-    return fmt.Sprintf("%s|%s|%s|%s", namespace, rateKey, fullMethod, ruleName)
-}
-```
+    * namespace
+    * custom rate key (e.g. user ID)
+    * method name
+    * rule name
+    * `phone` field value
 
 ---
 
-## Интерсептор
+# Usage
 
-`UnaryServerInterceptor` проверяет:
-
-1. Глобальные правила
-2. Правила метода (из protobuf)
-
-Если лимит превышен — возвращает `ResourceExhausted`.
-
----
-
-## Fixed-window semantics
-
-* Счётчик увеличивается при каждом запросе
-* TTL устанавливается **только при первом increment**
-* После окончания окна счётчик сбрасывается
-* Гарантирует predictable, fixed-time rate limiting, без скользящего окна
-
----
-
-## Пример Redis Cache
+## Basic Setup
 
 ```go
-import (
-    "context"
-    "time"
+rateLimiter := ratelimiter.New(
+    ratelimiter.WithNamespace("hookah-culture"),
 
-    "github.com/go-redis/redis/v9"
+    ratelimiter.WithCache(
+        ratelimiteradapter.NewRedisCache(redisClient),
+    ),
+
+    ratelimiter.WithGlobalLimitRules([]ratelimiter.Rule{
+        {
+            Name:   "global",
+            Limit:  5,
+            Window: time.Minute,
+        },
+    }),
+
+    ratelimiter.WithRateKeyExtender(
+        func(ctx context.Context, _ interface{}, _ *grpc.UnaryServerInfo) (string, error) {
+            user, ok := actor.FromContext(ctx)
+            if !ok {
+                return "", nil
+            }
+            return strconv.FormatInt(user.ID, 10), nil
+        },
+    ),
 )
+```
 
-rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
+Then attach to gRPC server:
 
-redisCache := NewRedisCache(rdb) // Реализация с INCR + PEXPIRE
-rl := ratelimiter.New(ratelimiter.WithCache(redisCache))
+```go
+grpc.NewServer(
+    grpc.UnaryInterceptor(rateLimiter.UnaryServerInterceptor()),
+)
 ```
 
 ---
 
-## Лицензия
+# Storage Backends
 
-MIT License © 2026
+## Redis (Recommended)
+
+Uses Lua script for atomic `INCR` + `PEXPIRE`.
+
+```go
+ratelimiter.WithCache(
+    ratelimiteradapter.NewRedisCache(redisClient),
+)
+```
+
+Guarantees:
+
+* Atomic increment
+* TTL set only on first increment
+
+---
+
+## In-Memory
+
+Suitable for:
+
+* Testing
+* Single-instance services
+
+```go
+ratelimiter.WithCache(
+    cache.NewInMemoryCache(),
+)
+```
+
+---
+
+# Key Strategy
+
+Default storage key format:
 
 ```
+rate-limiter:<namespace>:<rateKeyExtension>:<fullMethod>:<ruleName>:<sorted_attrs>
+```
+
+Example:
+
+```
+rate-limiter:hookah-culture:42:/auth.AuthService/SendCode:per_minute:phone=79998887766
+```
+
+You can override formatting:
+
+```go
+ratelimiter.WithRateKeyFormatter(customFormatter)
+```
+
+---
+
+# Global Rules
+
+Apply to **all** methods:
+
+```go
+ratelimiter.WithGlobalLimitRules([]ratelimiter.Rule{
+    {
+        Name:   "global",
+        Limit:  100,
+        Window: time.Minute,
+    },
+})
+```
+
+---
+
+# Custom Rate Key
+
+By default, a static value is used.
+
+Override to inject:
+
+* User ID
+* API key
+* Tenant ID
+* Any context-based identity
+
+```go
+ratelimiter.WithRateKeyExtender(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (string, error) {
+    return "custom-key", nil
+})
+```
+
+---
+
+# Error Behavior
+
+When a rule is exceeded:
+
+* gRPC status: `ResourceExhausted`
+* Message: `rate limit exceeded: rule_name`
+
+You can customize:
+
+```go
+ratelimiter.WithExceedErrorFormatter(customFormatter)
+```
+
+---
+
+# Design Guarantees
+
+* Deterministic key construction
+* Atomic counter increment
+* TTL never extended
+* No sliding-window side effects
+* Protobuf-driven configuration
+* Zero reflection at runtime for rules (cached once)
+
+---
+
+# When To Use
+
+Good fit for:
+
+* Auth flows (OTP, login)
+* Public APIs
+* Multi-tenant systems
+* Internal service protection
+
+---
+
+# License
+
+MIT
