@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package rate_limiter;
+package rate_limiter.v1;
 
 option go_package = "github.com/murouse/rate-limiter;rate_limiter";
 

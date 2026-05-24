@@ -4,7 +4,7 @@ tasks:
   # Генерация
   gen:
     cmds:
-      - protoc --go_out=. --go-grpc_out=. rate_limiter.proto
+      - protoc -I proto --go_out=. --go-grpc_out=. proto/rate_limiter/v1/rate_limiter.proto
 
   # Линтинг
   lint:

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.19.6
-// source: rate_limiter.proto
+// source: rate_limiter/v1/rate_limiter.proto
 
 package rate_limiter
 
@@ -34,7 +34,7 @@ type Rule struct {
 
 func (x *Rule) Reset() {
 	*x = Rule{}
-	mi := &file_rate_limiter_proto_msgTypes[0]
+	mi := &file_rate_limiter_v1_rate_limiter_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +46,7 @@ func (x *Rule) String() string {
 func (*Rule) ProtoMessage() {}
 
 func (x *Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_rate_limiter_proto_msgTypes[0]
+	mi := &file_rate_limiter_v1_rate_limiter_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +59,7 @@ func (x *Rule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Rule.ProtoReflect.Descriptor instead.
 func (*Rule) Descriptor() ([]byte, []int) {
-	return file_rate_limiter_proto_rawDescGZIP(), []int{0}
+	return file_rate_limiter_v1_rate_limiter_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Rule) GetName() string {
@@ -83,73 +83,73 @@ func (x *Rule) GetWindow() *durationpb.Duration {
 	return nil
 }
 
-var file_rate_limiter_proto_extTypes = []protoimpl.ExtensionInfo{
+var file_rate_limiter_v1_rate_limiter_proto_extTypes = []protoimpl.ExtensionInfo{
 	{
 		ExtendedType:  (*descriptorpb.MethodOptions)(nil),
 		ExtensionType: ([]*Rule)(nil),
 		Field:         51234,
-		Name:          "rate_limiter.rules",
+		Name:          "rate_limiter.v1.rules",
 		Tag:           "bytes,51234,rep,name=rules",
-		Filename:      "rate_limiter.proto",
+		Filename:      "rate_limiter/v1/rate_limiter.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
 		ExtensionType: (*string)(nil),
 		Field:         51235,
-		Name:          "rate_limiter.rate_key",
+		Name:          "rate_limiter.v1.rate_key",
 		Tag:           "bytes,51235,opt,name=rate_key",
-		Filename:      "rate_limiter.proto",
+		Filename:      "rate_limiter/v1/rate_limiter.proto",
 	},
 }
 
 // Extension fields to descriptorpb.MethodOptions.
 var (
-	// repeated rate_limiter.Rule rules = 51234;
-	E_Rules = &file_rate_limiter_proto_extTypes[0]
+	// repeated rate_limiter.v1.Rule rules = 51234;
+	E_Rules = &file_rate_limiter_v1_rate_limiter_proto_extTypes[0]
 )
 
 // Extension fields to descriptorpb.FieldOptions.
 var (
 	// optional string rate_key = 51235;
-	E_RateKey = &file_rate_limiter_proto_extTypes[1]
+	E_RateKey = &file_rate_limiter_v1_rate_limiter_proto_extTypes[1]
 )
 
-var File_rate_limiter_proto protoreflect.FileDescriptor
+var File_rate_limiter_v1_rate_limiter_proto protoreflect.FileDescriptor
 
-const file_rate_limiter_proto_rawDesc = "" +
+const file_rate_limiter_v1_rate_limiter_proto_rawDesc = "" +
 	"\n" +
-	"\x12rate_limiter.proto\x12\frate_limiter\x1a google/protobuf/descriptor.proto\x1a\x1egoogle/protobuf/duration.proto\"c\n" +
+	"\"rate_limiter/v1/rate_limiter.proto\x12\x0frate_limiter.v1\x1a google/protobuf/descriptor.proto\x1a\x1egoogle/protobuf/duration.proto\"c\n" +
 	"\x04Rule\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x121\n" +
-	"\x06window\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x06window:J\n" +
-	"\x05rules\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x90\x03 \x03(\v2\x12.rate_limiter.RuleR\x05rules::\n" +
+	"\x06window\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x06window:M\n" +
+	"\x05rules\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x90\x03 \x03(\v2\x15.rate_limiter.v1.RuleR\x05rules::\n" +
 	"\brate_key\x12\x1d.google.protobuf.FieldOptions\x18\xa3\x90\x03 \x01(\tR\arateKeyB.Z,github.com/murouse/rate-limiter;rate_limiterb\x06proto3"
 
 var (
-	file_rate_limiter_proto_rawDescOnce sync.Once
-	file_rate_limiter_proto_rawDescData []byte
+	file_rate_limiter_v1_rate_limiter_proto_rawDescOnce sync.Once
+	file_rate_limiter_v1_rate_limiter_proto_rawDescData []byte
 )
 
-func file_rate_limiter_proto_rawDescGZIP() []byte {
-	file_rate_limiter_proto_rawDescOnce.Do(func() {
-		file_rate_limiter_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_rate_limiter_proto_rawDesc), len(file_rate_limiter_proto_rawDesc)))
+func file_rate_limiter_v1_rate_limiter_proto_rawDescGZIP() []byte {
+	file_rate_limiter_v1_rate_limiter_proto_rawDescOnce.Do(func() {
+		file_rate_limiter_v1_rate_limiter_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_rate_limiter_v1_rate_limiter_proto_rawDesc), len(file_rate_limiter_v1_rate_limiter_proto_rawDesc)))
 	})
-	return file_rate_limiter_proto_rawDescData
+	return file_rate_limiter_v1_rate_limiter_proto_rawDescData
 }
 
-var file_rate_limiter_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_rate_limiter_proto_goTypes = []any{
-	(*Rule)(nil),                       // 0: rate_limiter.Rule
+var file_rate_limiter_v1_rate_limiter_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_rate_limiter_v1_rate_limiter_proto_goTypes = []any{
+	(*Rule)(nil),                       // 0: rate_limiter.v1.Rule
 	(*durationpb.Duration)(nil),        // 1: google.protobuf.Duration
 	(*descriptorpb.MethodOptions)(nil), // 2: google.protobuf.MethodOptions
 	(*descriptorpb.FieldOptions)(nil),  // 3: google.protobuf.FieldOptions
 }
-var file_rate_limiter_proto_depIdxs = []int32{
-	1, // 0: rate_limiter.Rule.window:type_name -> google.protobuf.Duration
-	2, // 1: rate_limiter.rules:extendee -> google.protobuf.MethodOptions
-	3, // 2: rate_limiter.rate_key:extendee -> google.protobuf.FieldOptions
-	0, // 3: rate_limiter.rules:type_name -> rate_limiter.Rule
+var file_rate_limiter_v1_rate_limiter_proto_depIdxs = []int32{
+	1, // 0: rate_limiter.v1.Rule.window:type_name -> google.protobuf.Duration
+	2, // 1: rate_limiter.v1.rules:extendee -> google.protobuf.MethodOptions
+	3, // 2: rate_limiter.v1.rate_key:extendee -> google.protobuf.FieldOptions
+	0, // 3: rate_limiter.v1.rules:type_name -> rate_limiter.v1.Rule
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	3, // [3:4] is the sub-list for extension type_name
@@ -157,27 +157,27 @@ var file_rate_limiter_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_rate_limiter_proto_init() }
-func file_rate_limiter_proto_init() {
-	if File_rate_limiter_proto != nil {
+func init() { file_rate_limiter_v1_rate_limiter_proto_init() }
+func file_rate_limiter_v1_rate_limiter_proto_init() {
+	if File_rate_limiter_v1_rate_limiter_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_rate_limiter_proto_rawDesc), len(file_rate_limiter_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_rate_limiter_v1_rate_limiter_proto_rawDesc), len(file_rate_limiter_v1_rate_limiter_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 2,
 			NumServices:   0,
 		},
-		GoTypes:           file_rate_limiter_proto_goTypes,
-		DependencyIndexes: file_rate_limiter_proto_depIdxs,
-		MessageInfos:      file_rate_limiter_proto_msgTypes,
-		ExtensionInfos:    file_rate_limiter_proto_extTypes,
+		GoTypes:           file_rate_limiter_v1_rate_limiter_proto_goTypes,
+		DependencyIndexes: file_rate_limiter_v1_rate_limiter_proto_depIdxs,
+		MessageInfos:      file_rate_limiter_v1_rate_limiter_proto_msgTypes,
+		ExtensionInfos:    file_rate_limiter_v1_rate_limiter_proto_extTypes,
 	}.Build()
-	File_rate_limiter_proto = out.File
-	file_rate_limiter_proto_goTypes = nil
-	file_rate_limiter_proto_depIdxs = nil
+	File_rate_limiter_v1_rate_limiter_proto = out.File
+	file_rate_limiter_v1_rate_limiter_proto_goTypes = nil
+	file_rate_limiter_v1_rate_limiter_proto_depIdxs = nil
 }
