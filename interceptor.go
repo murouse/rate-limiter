@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	ratelimiterpb "github.com/murouse/rate-limiter/github.com/murouse/rate-limiter"
+	ratelimiterpb "github.com/murouse/rate-limiter/pkg/api/github.com/murouse/rate-limiter"
 )
 
 // UnaryServerInterceptor returns a gRPC unary server interceptor

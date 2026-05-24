@@ -5,7 +5,7 @@ import (
 
 	"github.com/samber/lo"
 
-	ratelimiterpb "github.com/murouse/rate-limiter/github.com/murouse/rate-limiter"
+	ratelimiterpb "github.com/murouse/rate-limiter/pkg/api/github.com/murouse/rate-limiter"
 )
 
 // Rule describes a single fixed-window rate limiting rule.

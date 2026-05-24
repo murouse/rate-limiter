@@ -4,7 +4,8 @@ tasks:
   # Генерация
   gen:
     cmds:
-      - protoc -I proto --go_out=. --go-grpc_out=. proto/rate_limiter/v1/rate_limiter.proto
+      - mkdir -p pkg/api
+      - protoc -I api --go_out=pkg/api --go-grpc_out=pkg/api api/murouse/rate_limiter/v1/rate_limiter.proto
 
   # Линтинг
   lint:
