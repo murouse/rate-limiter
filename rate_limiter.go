@@ -1,10 +1,10 @@
 package ratelimiter
 
 import (
+	"log/slog"
 	"sync"
 
 	"github.com/murouse/rate-limiter/internal/cache"
-	"github.com/murouse/rate-limiter/internal/logger"
 )
 
 // RateLimiter implements a fixed-window rate limiting middleware for gRPC.
@@ -16,7 +16,7 @@ type RateLimiter struct {
 	rateKeyExtender      rateKeyExtenderFunc
 	rateKeyFormatter     rateKeyFormatterFunc
 	exceedErrorFormatter exceedErrorFormatterFunc
-	logger               Logger
+	logger               *slog.Logger
 
 	methodRules     map[string][]Rule
 	methodRulesOnce sync.Once
@@ -34,7 +34,7 @@ func New(opts ...Option) *RateLimiter {
 		rateKeyExtender:      defaultRateKeyExtender,
 		rateKeyFormatter:     defaultRateKeyFormatter,
 		exceedErrorFormatter: defaultExceedErrorFormatter,
-		logger:               logger.NewNoopLogger(),
+		logger:               slog.New(slog.DiscardHandler),
 	}
 
 	for _, opt := range opts {

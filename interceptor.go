@@ -3,6 +3,7 @@ package ratelimiter
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -31,17 +32,21 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		// Извлекаем дополнительный кастомный rate key (например идентификатор пользователя из контекста)
 		rateKeyExtension, err := rl.rateKeyExtender(ctx, req, info)
 		if err != nil {
-			rl.logger.Errorf("cannot extend rate key for method %q: %v", info.FullMethod, err)
+			rl.logger.ErrorContext(ctx, "cannot extend rate key", slog.String("error", err.Error()))
 			return nil, status.Errorf(codes.Internal, "cannot extend rate key: %v", err)
 		}
-		rl.logger.Debugf("rate key extension %q for method %q", rateKeyExtension, info.FullMethod)
+		rl.logger.DebugContext(ctx, "rate key extension", slog.String("key", rateKeyExtension))
 
 		methodRules := rl.getMethodRules()[info.FullMethod]
-		rl.logger.Debugf("found %d rate limit rules for method %q", len(methodRules), info.FullMethod)
+		rl.logger.DebugContext(ctx, "found rate limit rules", slog.Int("count", len(methodRules)))
 
 		exceededRules, err := rl.allow(ctx, rateKeyExtension, info.FullMethod, attrs, methodRules)
 		if err != nil {
-			rl.logger.Errorf("error checking rate limits for key %q, method %q: %v", rateKeyExtension, info.FullMethod, err)
+			rl.logger.ErrorContext(ctx, "error checking rate limits",
+				slog.String("key", rateKeyExtension),
+				slog.String("error", err.Error()),
+			)
+
 			return nil, status.Errorf(codes.Internal, "rate limiter allow: %v", err)
 		}
 		if len(exceededRules) > 0 {
@@ -93,7 +98,7 @@ func (rl *RateLimiter) allow(ctx context.Context, rateKeyExtension, fullMethod s
 func (rl *RateLimiter) checkRule(ctx context.Context, fullRateKey string, rule Rule) (bool, error) {
 	count, err := rl.cache.Increment(ctx, fullRateKey, rule.Window)
 	if err != nil {
-		rl.logger.Errorf("increment failed for key %q: %v", fullRateKey, err)
+		rl.logger.ErrorContext(ctx, "increment failed", slog.String("key", fullRateKey), slog.String("error", err.Error()))
 		return false, fmt.Errorf("increment: %w", err)
 	}
 

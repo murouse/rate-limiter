@@ -3,6 +3,7 @@ package ratelimiter
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 
@@ -59,7 +60,7 @@ func WithRateKeyFormatter(rateKeyFormatter rateKeyFormatterFunc) Option {
 }
 
 // WithLogger sets a custom logger implementation.
-func WithLogger(logger Logger) Option {
+func WithLogger(logger *slog.Logger) Option {
 	return func(rl *RateLimiter) {
 		rl.logger = logger
 	}

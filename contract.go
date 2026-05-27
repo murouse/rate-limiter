@@ -25,10 +25,3 @@ import (
 type Cache interface {
 	Increment(ctx context.Context, key string, ttl time.Duration) (int64, error)
 }
-
-type Logger interface {
-	Debugf(msg string, args ...any)
-	Infof(msg string, args ...any)
-	Warnf(msg string, args ...any)
-	Errorf(msg string, args ...any)
-}
