@@ -8,15 +8,11 @@ Lightweight, protobuf-driven **fixed-window** rate limiter middleware for gRPC.
 * ✅ Redis or in-memory backend
 * ✅ Pluggable key strategy and logger
 
----
-
 ## Installation
 
 ```bash
 go get github.com/murouse/rate-limiter
 ```
-
----
 
 ## How It Works
 
@@ -31,8 +27,6 @@ The limiter:
 4. Uses atomic increment with TTL set **only on first request**
 
 > TTL is **not extended** on subsequent increments → strict fixed-window behavior.
-
----
 
 # Define Rules in Proto
 
@@ -60,8 +54,6 @@ extend google.protobuf.FieldOptions {
   string rate_key = 51235;
 }
 ```
-
----
 
 ## Example: Per-Method Rule
 
@@ -93,8 +85,6 @@ For `SendCode`:
     * method name
     * rule name
     * `phone` field value
-
----
 
 # Usage
 
@@ -136,8 +126,6 @@ grpc.NewServer(
 )
 ```
 
----
-
 # Storage Backends
 
 ## Redis (Recommended)
@@ -155,8 +143,6 @@ Guarantees:
 * Atomic increment
 * TTL set only on first increment
 
----
-
 ## In-Memory
 
 Suitable for:
@@ -169,8 +155,6 @@ ratelimiter.WithCache(
     cache.NewInMemoryCache(),
 )
 ```
-
----
 
 # Key Strategy
 
@@ -192,8 +176,6 @@ You can override formatting:
 ratelimiter.WithRateKeyFormatter(customFormatter)
 ```
 
----
-
 # Global Rules
 
 Apply to **all** methods:
@@ -207,8 +189,6 @@ ratelimiter.WithGlobalLimitRules([]ratelimiter.Rule{
     },
 })
 ```
-
----
 
 # Custom Rate Key
 
@@ -227,8 +207,6 @@ ratelimiter.WithRateKeyExtender(func(ctx context.Context, req interface{}, info 
 })
 ```
 
----
-
 # Error Behavior
 
 When a rule is exceeded:
@@ -242,8 +220,6 @@ You can customize:
 ratelimiter.WithExceedErrorFormatter(customFormatter)
 ```
 
----
-
 # Design Guarantees
 
 * Deterministic key construction
@@ -253,8 +229,6 @@ ratelimiter.WithExceedErrorFormatter(customFormatter)
 * Protobuf-driven configuration
 * Zero reflection at runtime for rules (cached once)
 
----
-
 # When To Use
 
 Good fit for:
@@ -263,8 +237,6 @@ Good fit for:
 * Public APIs
 * Multi-tenant systems
 * Internal service protection
-
----
 
 # License
 
