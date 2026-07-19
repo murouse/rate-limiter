@@ -5,7 +5,11 @@ tasks:
   gen:
     cmds:
       - mkdir -p pkg/api
-      - protoc -I api --go_out=pkg/api --go-grpc_out=pkg/api api/murouse/rate_limiter/v1/rate_limiter.proto
+      - |
+        protoc -I api \
+          --go_out=paths=source_relative:pkg/api \
+          --go-grpc_out=paths=source_relative:pkg/api \
+          api/murouse/rate_limiter/v1/rate_limiter.proto
 
   # Линтинг
   lint:

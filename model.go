@@ -5,7 +5,7 @@ import (
 
 	"github.com/samber/lo"
 
-	ratelimiterpb "github.com/murouse/rate-limiter/pkg/api/github.com/murouse/rate-limiter"
+	pb "github.com/murouse/rate-limiter/pkg/api/murouse/rate_limiter/v1"
 )
 
 // Rule describes a single fixed-window rate limiting rule.
@@ -17,8 +17,8 @@ type Rule struct {
 
 // RateLimitRulesToModel converts protobuf Rule definitions
 // into internal Rule models used by the rate limiter.
-func RateLimitRulesToModel(rs []*ratelimiterpb.Rule) []Rule {
-	return lo.Map(rs, func(r *ratelimiterpb.Rule, _ int) Rule {
+func RateLimitRulesToModel(rs []*pb.Rule) []Rule {
+	return lo.Map(rs, func(r *pb.Rule, _ int) Rule {
 		return Rule{
 			Name:   r.Name,
 			Limit:  int(r.Limit),

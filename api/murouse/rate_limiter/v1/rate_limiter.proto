@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package murouse.rate_limiter.v1;
 
-option go_package = "github.com/murouse/rate-limiter;rate_limiter";
+option go_package = "github.com/murouse/rate-limiter/pkg/api/murouse/rate_limiter/v1;ratelimiterv1";
 
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/duration.proto";

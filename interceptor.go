@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	ratelimiterpb "github.com/murouse/rate-limiter/pkg/api/github.com/murouse/rate-limiter"
+	pb "github.com/murouse/rate-limiter/pkg/api/murouse/rate_limiter/v1"
 )
 
 // UnaryServerInterceptor returns a gRPC unary server interceptor
@@ -137,8 +137,8 @@ func extractRateKeyAttrs(msg proto.Message) map[string]string {
 			}
 
 			// Проверяем опцию rate_key
-			if proto.HasExtension(opts, ratelimiterpb.E_RateKey) {
-				alias := proto.GetExtension(opts, ratelimiterpb.E_RateKey).(string)
+			if proto.HasExtension(opts, pb.E_RateKey) {
+				alias := proto.GetExtension(opts, pb.E_RateKey).(string)
 				if ref.Has(field) {
 					val := ref.Get(field)
 					attrs[alias] = formatProtoValue(val)
@@ -207,12 +207,12 @@ func (rl *RateLimiter) loadMethodRules() {
 				fullMethodName := fmt.Sprintf("/%s/%s", service.FullName(), method.Name())
 
 				options := method.Options().(*descriptorpb.MethodOptions)
-				if options == nil || !proto.HasExtension(options, ratelimiterpb.E_Rules) {
+				if options == nil || !proto.HasExtension(options, pb.E_Rules) {
 					continue
 				}
 
-				extension := proto.GetExtension(options, ratelimiterpb.E_Rules)
-				if rulesSlice, ok := extension.([]*ratelimiterpb.Rule); ok {
+				extension := proto.GetExtension(options, pb.E_Rules)
+				if rulesSlice, ok := extension.([]*pb.Rule); ok {
 					rulesMap[fullMethodName] = RateLimitRulesToModel(rulesSlice)
 				}
 			}
