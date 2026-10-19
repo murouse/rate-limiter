@@ -145,6 +145,11 @@ func extractRateKeyAttrs(msg proto.Message) map[string]string {
 				}
 			}
 
+			// map не обходим: ключ лимита в значениях map не имеет смысла, а Value.Message() на map паникует
+			if field.IsMap() {
+				continue
+			}
+
 			// Рекурсивно для вложенных сообщений
 			if field.Kind() == protoreflect.MessageKind && ref.Has(field) {
 				if field.IsList() {
