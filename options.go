@@ -66,6 +66,15 @@ func WithLogger(logger *slog.Logger) Option {
 	}
 }
 
+// WithFailOpen lets requests through when the cache fails (e.g. Redis timeout) instead of rejecting them
+// with Unavailable. The error is still logged. Rate limiting is off while the cache is down, so do not use it
+// when limits protect against brute force (OTP, login).
+func WithFailOpen() Option {
+	return func(rl *RateLimiter) {
+		rl.failOpen = true
+	}
+}
+
 // WithExceedErrorFormatter overrides the error returned
 // when one or more rate limit rules are exceeded.
 func WithExceedErrorFormatter(exceedErrorFormatter exceedErrorFormatterFunc) Option {

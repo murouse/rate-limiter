@@ -220,6 +220,12 @@ You can customize:
 ratelimiter.WithExceedErrorFormatter(customFormatter)
 ```
 
+When the cache fails (e.g. Redis timeout):
+
+* gRPC status: `Unavailable` — the request may be retried
+* `ratelimiter.WithFailOpen()` — let the request through instead (the error is logged); limits are off while the
+  cache is down, so keep the default for brute-force protection (OTP, login)
+
 # Design Guarantees
 
 * Deterministic key construction

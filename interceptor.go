@@ -47,7 +47,12 @@ func (rl *RateLimiter) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 				slog.String("error", err.Error()),
 			)
 
-			return nil, status.Errorf(codes.Internal, "rate limiter allow: %v", err)
+			// хранилище недоступно — не ошибка сервера: запрос можно повторить (или пропустить, WithFailOpen)
+			if rl.failOpen {
+				return handler(ctx, req)
+			}
+
+			return nil, status.Errorf(codes.Unavailable, "rate limiter allow: %v", err)
 		}
 		if len(exceededRules) > 0 {
 			return nil, rl.exceedErrorFormatter(exceededRules)

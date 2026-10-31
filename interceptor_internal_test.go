@@ -1,7 +1,14 @@
 package ratelimiter
 
 import (
+	"context"
+	"errors"
 	"testing"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -50,5 +57,29 @@ func TestExtractRateKeyAttrsSkipsMaps(t *testing.T) {
 
 	if attrs := extractRateKeyAttrs(msg); len(attrs) != 0 {
 		t.Fatalf("want no attrs, got %v", attrs)
+	}
+}
+
+type failingCache struct{}
+
+func (failingCache) Increment(context.Context, string, time.Duration) (int64, error) {
+	return 0, errors.New("i/o timeout")
+}
+
+// Хранилище не ответило — Unavailable (запрос можно повторить), а не Internal; с WithFailOpen — запрос проходит
+func TestCacheFailure(t *testing.T) {
+	info := &grpc.UnaryServerInfo{FullMethod: "/test.Service/Method"}
+	rules := WithGlobalLimitRules([]Rule{{Name: "global", Limit: 1, Window: time.Minute}})
+	handler := func(context.Context, any) (any, error) { return "ok", nil }
+
+	_, err := New(WithCache(failingCache{}), rules).UnaryServerInterceptor()(context.Background(), nil, info, handler)
+	if status.Code(err) != codes.Unavailable {
+		t.Fatalf("want Unavailable, got %v", err)
+	}
+
+	res, err := New(WithCache(failingCache{}), rules, WithFailOpen()).
+		UnaryServerInterceptor()(context.Background(), nil, info, handler)
+	if err != nil || res != "ok" {
+		t.Fatalf("fail-open: want handler result, got %v, %v", res, err)
 	}
 }

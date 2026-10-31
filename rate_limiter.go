@@ -17,6 +17,7 @@ type RateLimiter struct {
 	rateKeyFormatter     rateKeyFormatterFunc
 	exceedErrorFormatter exceedErrorFormatterFunc
 	logger               *slog.Logger
+	failOpen             bool
 
 	methodRules     map[string][]Rule
 	methodRulesOnce sync.Once
