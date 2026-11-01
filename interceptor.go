@@ -82,7 +82,13 @@ func (rl *RateLimiter) allow(ctx context.Context, rateKeyExtension, fullMethod s
 	}
 
 	for _, methodRule := range methodRules {
-		fullRateKey := rl.rateKeyFormatter(rl.namespace, rateKeyExtension, fullMethod, methodRule.Name, attrs)
+		// общий счетчик метода — без атрибутов и расширения ключа
+		ruleKeyExtension, ruleAttrs := rateKeyExtension, attrs
+		if methodRule.Shared {
+			ruleKeyExtension, ruleAttrs = "", nil
+		}
+
+		fullRateKey := rl.rateKeyFormatter(rl.namespace, ruleKeyExtension, fullMethod, methodRule.Name, ruleAttrs)
 
 		ok, err := rl.checkRule(ctx, fullRateKey, methodRule)
 		if err != nil {

@@ -44,6 +44,7 @@ message Rule {
   string name = 1;
   int32 limit = 2;
   google.protobuf.Duration window = 3;
+  bool shared = 4;
 }
 
 extend google.protobuf.MethodOptions {
@@ -85,6 +86,20 @@ For `SendCode`:
     * method name
     * rule name
     * `phone` field value
+
+## Example: Several Rules and a Shared Cap
+
+`rules` is repeated: every rule has its own counter. A rule with `shared: true` counts all calls of the method
+together — rate key attributes and the custom rate key are left out of its key:
+
+```proto
+rpc SendCode(SendCodeRequest) returns (SendCodeResponse) {
+  option (rate_limiter.rules) = { name: "per_minute" limit: 2 window: { seconds: 60 } };
+  option (rate_limiter.rules) = { name: "per_day" limit: 10 window: { seconds: 86400 } };
+  // all phones together: a circuit breaker for paid SMS
+  option (rate_limiter.rules) = { name: "total_per_day" limit: 1000 window: { seconds: 86400 } shared: true };
+}
+```
 
 # Usage
 

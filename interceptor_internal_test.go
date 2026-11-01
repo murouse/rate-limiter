@@ -83,3 +83,34 @@ func TestCacheFailure(t *testing.T) {
 		t.Fatalf("fail-open: want handler result, got %v, %v", res, err)
 	}
 }
+
+// Общее правило (Shared) считает все вызовы метода вместе: разные rate_key и пользователи — один счетчик,
+// а обычное правило — свой счетчик на каждый ключ
+func TestSharedRule(t *testing.T) {
+	ctx := context.Background()
+	rl := New()
+	rules := []Rule{
+		{Name: "per_key", Limit: 1, Window: time.Minute},
+		{Name: "total", Limit: 2, Window: time.Minute, Shared: true},
+	}
+	allow := func(user, phone string) []Rule {
+		exceeded, err := rl.allow(ctx, user, "/test.Service/Method", map[string]string{"phone": phone}, rules)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return exceeded
+	}
+
+	if ex := allow("u1", "1"); len(ex) != 0 {
+		t.Fatalf("first call: exceeded %v", ex)
+	}
+	if ex := allow("u2", "2"); len(ex) != 0 {
+		t.Fatalf("another key: exceeded %v", ex)
+	}
+	if ex := allow("u3", "3"); len(ex) != 1 || ex[0].Name != "total" {
+		t.Fatalf("third key: want only total exceeded, got %v", ex)
+	}
+	if ex := allow("u1", "1"); len(ex) != 2 {
+		t.Fatalf("same key again: want per_key and total exceeded, got %v", ex)
+	}
+}

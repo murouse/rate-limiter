@@ -11,6 +11,9 @@ message Rule {
   string name = 1;
   int32 limit = 2;
   google.protobuf.Duration window = 3;
+  // shared — one counter for the whole method: rate_key attributes and the rate key extension are not part of the key
+  // (e.g. a daily cap on all SendCode calls on top of a per-phone rule)
+  bool shared = 4;
 }
 
 extend google.protobuf.MethodOptions {

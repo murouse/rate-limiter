@@ -13,6 +13,8 @@ type Rule struct {
 	Name   string
 	Limit  int
 	Window time.Duration
+	// Shared — one counter for the whole method, regardless of rate key attributes and extension
+	Shared bool
 }
 
 // RateLimitRulesToModel converts protobuf Rule definitions
@@ -23,6 +25,7 @@ func RateLimitRulesToModel(rs []*pb.Rule) []Rule {
 			Name:   r.Name,
 			Limit:  int(r.Limit),
 			Window: r.Window.AsDuration(),
+			Shared: r.Shared,
 		}
 	})
 }
