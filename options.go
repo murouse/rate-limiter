@@ -46,7 +46,7 @@ func WithNamespace(namespace string) Option {
 // WithGlobalLimitRules configures rules that apply to all RPC methods.
 func WithGlobalLimitRules(rules []Rule) Option {
 	return func(rl *RateLimiter) {
-		rl.globalLimitRules = rules
+		rl.globalLimitRules = lo.Map(rules, func(r Rule, _ int) Rule { return r.withName() })
 	}
 }
 

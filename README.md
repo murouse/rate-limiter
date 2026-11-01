@@ -94,12 +94,16 @@ together — rate key attributes and the custom rate key are left out of its key
 
 ```proto
 rpc SendCode(SendCodeRequest) returns (SendCodeResponse) {
-  option (rate_limiter.rules) = { name: "per_minute" limit: 2 window: { seconds: 60 } };
-  option (rate_limiter.rules) = { name: "per_day" limit: 10 window: { seconds: 86400 } };
-  // all phones together: a circuit breaker for paid SMS
-  option (rate_limiter.rules) = { name: "total_per_day" limit: 1000 window: { seconds: 86400 } shared: true };
+  option (rate_limiter.rules) = { limit: 2 window: { seconds: 60 } };       // name: 2_per_1m
+  option (rate_limiter.rules) = { limit: 10 window: { seconds: 86400 } };   // name: 10_per_1d
+  // all phones together: a circuit breaker for paid SMS — name: 5000_per_1d_shared
+  option (rate_limiter.rules) = { limit: 5000 window: { seconds: 86400 } shared: true };
 }
 ```
+
+`name` is optional: it is part of the storage key and of the exceeded-limit error, and when empty it is derived from
+the rule — `<limit>_per_<window>` (window in the largest whole unit: `1d`, `12h`, `1m`, `30s`), plus `_shared`.
+Renaming a rule (or dropping its name) starts a new counter.
 
 # Usage
 

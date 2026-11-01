@@ -27,6 +27,8 @@ type Rule struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// name — part of the storage key and of the exceeded-limit error; empty — derived from the rule:
+	// "<limit>_per_<window>" ("2_per_1m", "10_per_1d"), "_shared" for a shared rule
 	Name   string               `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Limit  int32                `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 	Window *durationpb.Duration `protobuf:"bytes,3,opt,name=window,proto3" json:"window,omitempty"`

@@ -114,3 +114,26 @@ func TestSharedRule(t *testing.T) {
 		t.Fatalf("same key again: want per_key and total exceeded, got %v", ex)
 	}
 }
+
+// Имя правила без name — из самого правила: лимит, окно и общее ли оно
+func TestRuleName(t *testing.T) {
+	for _, tc := range []struct {
+		rule Rule
+		want string
+	}{
+		{Rule{Limit: 2, Window: time.Minute}, "2_per_1m"},
+		{Rule{Limit: 10, Window: 24 * time.Hour}, "10_per_1d"},
+		{Rule{Limit: 30, Window: time.Hour}, "30_per_1h"},
+		{Rule{Limit: 5, Window: 90 * time.Second}, "5_per_90s"},
+		{Rule{Limit: 5000, Window: 24 * time.Hour, Shared: true}, "5000_per_1d_shared"},
+		{Rule{Name: "custom", Limit: 1, Window: time.Minute}, "custom"},
+	} {
+		if got := tc.rule.withName().Name; got != tc.want {
+			t.Errorf("%+v: want %q, got %q", tc.rule, tc.want, got)
+		}
+	}
+
+	if got := New(WithGlobalLimitRules([]Rule{{Limit: 1, Window: time.Second}})).globalLimitRules[0].Name; got != "1_per_1s" {
+		t.Errorf("global rule: want 1_per_1s, got %q", got)
+	}
+}

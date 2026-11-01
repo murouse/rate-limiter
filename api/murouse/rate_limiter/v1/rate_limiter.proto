@@ -8,6 +8,8 @@ import "google/protobuf/descriptor.proto";
 import "google/protobuf/duration.proto";
 
 message Rule {
+  // name — part of the storage key and of the exceeded-limit error; empty — derived from the rule:
+  // "<limit>_per_<window>" ("2_per_1m", "10_per_1d"), "_shared" for a shared rule
   string name = 1;
   int32 limit = 2;
   google.protobuf.Duration window = 3;
